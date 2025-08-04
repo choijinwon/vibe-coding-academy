@@ -39,25 +39,48 @@ export async function serverSignUp(
 // 로그인
 export async function serverSignIn(email: string, password: string) {
   try {
-    // Mock 테스트 계정들
-    const testAccounts = {
-      'test@example.com': 'password123',
-      'teacher@example.com': 'password123',
-      'admin@example.com': 'password123',
-    };
+    // 실제 데이터베이스 사용자 확인을 위한 Mock 검증
+    // 실제 배포에서는 데이터베이스와 연동하여 비밀번호 해시 검증 필요
+    
+    // 현재 데이터베이스에 등록된 사용자들 (임시 검증용)
+    const registeredUsers = [
+      'test-db@example.com',
+      'abyys83@gmail.com',
+      // Mock 테스트 계정들도 포함
+      'test@example.com',
+      'teacher@example.com', 
+      'admin@example.com'
+    ];
 
-    if (!testAccounts[email as keyof typeof testAccounts] || testAccounts[email as keyof typeof testAccounts] !== password) {
+    // 비밀번호는 현재 단순 검증 (실제로는 해시 비교 필요)
+    const validPasswords = ['Password123!', 'password123'];
+    
+    if (!registeredUsers.includes(email) || !validPasswords.includes(password)) {
       throw new Error('이메일 또는 비밀번호가 올바르지 않습니다');
     }
 
+    // 사용자 역할 결정
+    let role = 'student';
+    let fullName = '사용자';
+    
+    if (email.includes('teacher')) {
+      role = 'instructor';
+      fullName = '테스트 강사';
+    } else if (email.includes('admin')) {
+      role = 'admin';
+      fullName = '관리자';
+    } else if (email === 'abyys83@gmail.com') {
+      fullName = '최진원';
+    } else if (email === 'test-db@example.com') {
+      fullName = '테스트 사용자';
+    }
+
     const user = {
-      id: `user_${email.split('@')[0]}`,
+      id: `user_${email.split('@')[0]}_${Date.now()}`,
       email,
       user_metadata: {
-        full_name: email.includes('teacher') ? '테스트 강사' : 
-                   email.includes('admin') ? '관리자' : '테스트 사용자',
-        role: email.includes('teacher') ? 'instructor' : 
-              email.includes('admin') ? 'admin' : 'student',
+        full_name: fullName,
+        role: role,
       },
       created_at: new Date().toISOString(),
     };
