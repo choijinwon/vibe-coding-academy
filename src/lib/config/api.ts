@@ -27,6 +27,7 @@ export const API_ENDPOINTS = {
   signup: () => `${getApiUrl()}/auth${getApiUrl().includes('.netlify') ? '-signup' : '/signup'}`,
   login: () => `${getApiUrl()}/auth${getApiUrl().includes('.netlify') ? '-login' : '/login'}`,
   forgotPassword: () => `${getApiUrl()}/auth${getApiUrl().includes('.netlify') ? '-forgot-password' : '/forgot-password'}`,
+  resendConfirmation: () => `${getApiUrl()}/auth${getApiUrl().includes('.netlify') ? '-resend-confirmation' : '/resend-confirmation'}`,
 };
 
 // 디버깅용 정보
@@ -41,6 +42,7 @@ export const getApiConfig = () => {
       signup: API_ENDPOINTS.signup(),
       login: API_ENDPOINTS.login(),
       forgotPassword: API_ENDPOINTS.forgotPassword(),
+      resendConfirmation: API_ENDPOINTS.resendConfirmation(),
     }
   };
 }; 

@@ -49,7 +49,9 @@ export async function serverSignIn(email: string, password: string) {
       // Mock 테스트 계정들도 포함
       'test@example.com',
       'teacher@example.com', 
-      'admin@example.com'
+      'admin@example.com',
+      // 새로 가입한 사용자 (테스트용)
+      'newuser@example.com'
     ];
 
     // 비밀번호는 현재 단순 검증 (실제로는 해시 비교 필요)
@@ -57,6 +59,18 @@ export async function serverSignIn(email: string, password: string) {
     
     if (!registeredUsers.includes(email) || !validPasswords.includes(password)) {
       throw new Error('이메일 또는 비밀번호가 올바르지 않습니다');
+    }
+
+    // 이메일 인증 상태 확인 (Mock)
+    // 실제 구현에서는 DB의 emailVerified 필드를 확인
+    const unverifiedEmails = [
+      'unverified@example.com', // 예시: 인증되지 않은 이메일
+      'newuser@example.com', // 방금 가입한 사용자 (미인증)
+      // 신규 가입자들은 기본적으로 미인증 상태
+    ];
+
+    if (unverifiedEmails.includes(email)) {
+      throw new Error('이메일 인증이 필요합니다. 가입 시 발송된 인증 이메일을 확인해주세요.');
     }
 
     // 사용자 역할 결정
@@ -73,6 +87,8 @@ export async function serverSignIn(email: string, password: string) {
       fullName = '최진원';
     } else if (email === 'test-db@example.com') {
       fullName = '테스트 사용자';
+    } else if (email === 'newuser@example.com') {
+      fullName = '신규 사용자';
     }
 
     const user = {
@@ -88,19 +104,19 @@ export async function serverSignIn(email: string, password: string) {
     const session = {
       access_token: `token_${Date.now()}`,
       refresh_token: `refresh_${Date.now()}`,
-      expires_at: Date.now() + (24 * 60 * 60 * 1000),
+      expires_at: Date.now() + (24 * 60 * 60 * 1000), // 24시간
       user,
     };
-    
-    return { 
-      data: { user, session }, 
-      error: null 
+
+    return {
+      data: { user, session },
+      error: null
     };
   } catch (error: any) {
     console.error('서버 로그인 오류:', error);
-    return { 
-      data: null, 
-      error: error.message || '로그인 중 오류가 발생했습니다' 
+    return {
+      data: null,
+      error: error.message || '로그인 중 오류가 발생했습니다'
     };
   }
 }

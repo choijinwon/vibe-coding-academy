@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Mail, CheckCircle } from 'lucide-react';
 
 import { registerSchema, type RegisterFormData } from '@/lib/validators/auth';
 import { Input, Select, Checkbox } from '@/components/ui/input';
@@ -17,12 +17,13 @@ interface RegisterFormProps {
   redirectTo?: string;
 }
 
-export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterFormProps) {
+export function RegisterForm({ onSuccess, redirectTo = '/login' }: RegisterFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isEmailSent, setIsEmailSent] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>('');
   
   const router = useRouter();
 
@@ -68,8 +69,14 @@ export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterF
         throw new Error(result.error || '회원가입 중 오류가 발생했습니다');
       }
       
-      // 회원가입 성공 - 이메일 확인 안내
+      // 회원가입 성공 - 이메일 인증 안내
+      setUserEmail(data.email);
       setIsEmailSent(true);
+      
+      // 성공 메시지 표시
+      if (result.message) {
+        console.log('회원가입 성공:', result.message);
+      }
       
     } catch (error: any) {
       console.error('회원가입 실패:', error);
@@ -88,35 +95,101 @@ export function RegisterForm({ onSuccess, redirectTo = '/dashboard' }: RegisterF
     }
   };
 
-  // 이메일 확인 안내 화면
+  // 이메일 재발송 함수
+  const resendConfirmationEmail = async () => {
+    if (!userEmail) return;
+    
+    setIsLoading(true);
+    try {
+      const response = await fetch(API_ENDPOINTS.resendConfirmation(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: userEmail }),
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        // 성공적으로 재발송됨
+        setAuthError(null);
+        console.log('인증 이메일 재발송 성공');
+      } else {
+        setAuthError(result.error || '이메일 재발송 중 오류가 발생했습니다');
+      }
+    } catch (error: any) {
+      console.error('이메일 재발송 실패:', error);
+      setAuthError('이메일 재발송 중 오류가 발생했습니다');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 이메일 인증 완료 안내 화면
   if (isEmailSent) {
     return (
       <div className="text-center space-y-6">
         <div className="bg-green-50 border border-green-200 rounded-md p-6">
+          <div className="flex items-center justify-center mb-4">
+            <Mail className="h-12 w-12 text-green-600" />
+          </div>
           <div className="text-green-600 text-lg font-medium mb-2">
             회원가입이 완료되었습니다! 🎉
           </div>
-          <div className="text-green-700 text-sm">
-            입력하신 이메일로 확인 메일을 발송했습니다.<br />
+          <div className="text-green-700 text-sm mb-4">
+            <strong>{userEmail}</strong>로 인증 메일을 발송했습니다.<br />
             메일의 링크를 클릭하여 계정을 활성화해주세요.
+          </div>
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
+            <div className="text-blue-700 text-xs">
+              💡 <strong>인증 완료 후 로그인이 가능합니다.</strong><br />
+              스팸 폴더도 확인해보세요!
+            </div>
           </div>
         </div>
         
         <div className="space-y-4">
           <Link 
             href="/login" 
-            className="inline-block w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors"
+            className="inline-flex items-center justify-center w-full bg-indigo-600 text-white py-3 px-4 rounded-md hover:bg-indigo-700 transition-colors font-medium"
           >
+            <CheckCircle className="h-4 w-4 mr-2" />
             로그인 페이지로 이동
           </Link>
           
-          <div className="text-sm text-gray-600">
-            이메일을 받지 못하셨나요?{' '}
+          <div className="flex items-center justify-center space-x-4 text-sm">
+            <span className="text-gray-600">이메일을 받지 못하셨나요?</span>
+            <button 
+              className="text-indigo-600 hover:text-indigo-500 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={resendConfirmationEmail}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="inline h-4 w-4 mr-1 animate-spin" />
+                  재발송 중...
+                </>
+              ) : (
+                '다시 발송'
+              )}
+            </button>
+          </div>
+          
+          {authError && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-3">
+              <div className="text-sm text-red-600">{authError}</div>
+            </div>
+          )}
+          
+          <div className="text-xs text-gray-500">
+            다른 이메일로 가입하시려면{' '}
             <button 
               className="text-indigo-600 hover:text-indigo-500 font-medium"
               onClick={() => {
-                // 이메일 재발송 로직 추가 가능
                 setIsEmailSent(false);
+                setUserEmail('');
+                setAuthError(null);
               }}
             >
               다시 가입하기

@@ -11,6 +11,7 @@ import { loginSchema, type LoginFormData } from '@/lib/validators/auth';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { API_ENDPOINTS } from '@/lib/config/api';
+import { useAuth } from '@/lib/auth/auth-context';
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -21,21 +22,56 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard' }: LoginFormPro
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [needsEmailVerification, setNeedsEmailVerification] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>('');
   
   const router = useRouter();
+  const { setUser } = useAuth(); // AuthContext에서 setUser 함수 가져오기
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     setError,
+    watch,
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
 
+  // 이메일 재발송 함수
+  const resendVerificationEmail = async () => {
+    if (!userEmail) return;
+    
+    setIsLoading(true);
+    try {
+      const response = await fetch(API_ENDPOINTS.resendConfirmation(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: userEmail }),
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        setAuthError('인증 이메일이 재발송되었습니다. 이메일을 확인해주세요.');
+        setNeedsEmailVerification(false);
+      } else {
+        setAuthError(result.error || '이메일 재발송 중 오류가 발생했습니다');
+      }
+    } catch (error: any) {
+      console.error('이메일 재발송 실패:', error);
+      setAuthError('이메일 재발송 중 오류가 발생했습니다');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     setAuthError(null);
+    setNeedsEmailVerification(false);
 
     try {
       const response = await fetch(API_ENDPOINTS.login(), {
@@ -55,13 +91,24 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard' }: LoginFormPro
         throw new Error(result.error || '로그인 중 오류가 발생했습니다');
       }
       
-      // 성공 처리 - 세션 정보를 컨텍스트에 업데이트
-      // TODO: Auth Context에 세션 정보 업데이트 로직 추가
+      // 성공 처리 - AuthContext에 사용자 정보 업데이트
+      if (result.user) {
+        setUser(result.user);
+        console.log('로그인 성공, 사용자 상태 업데이트:', result.user);
+      }
+      
+      // 성공 메시지 표시 (선택사항)
+      if (result.message) {
+        console.log('로그인 성공:', result.message);
+      }
       
       if (onSuccess) {
         onSuccess();
       } else {
-        router.push(redirectTo);
+        // 약간의 지연 후 대시보드로 이동 (사용자가 성공을 인지할 수 있도록)
+        setTimeout(() => {
+          router.push(redirectTo);
+        }, 100);
       }
     } catch (error: any) {
       console.error('로그인 실패:', error);
@@ -69,8 +116,14 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard' }: LoginFormPro
       const errorMessage = error.message || '로그인 중 오류가 발생했습니다';
       setAuthError(errorMessage);
       
+      // 이메일 인증이 필요한 경우 처리
+      if (errorMessage.includes('이메일 인증이 필요합니다')) {
+        setNeedsEmailVerification(true);
+        setUserEmail(data.email);
+      }
+      
       // 특정 필드 에러 처리
-      if (errorMessage.includes('이메일')) {
+      if (errorMessage.includes('이메일') && !errorMessage.includes('인증')) {
         setError('email', { message: errorMessage });
       } else if (errorMessage.includes('비밀번호')) {
         setError('password', { message: errorMessage });
@@ -84,8 +137,42 @@ export function LoginForm({ onSuccess, redirectTo = '/dashboard' }: LoginFormPro
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {/* 전체 에러 메시지 */}
       {authError && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-4">
-          <div className="text-sm text-red-600">{authError}</div>
+        <div className={`border rounded-md p-4 ${
+          authError.includes('재발송되었습니다') 
+            ? 'bg-green-50 border-green-200' 
+            : 'bg-red-50 border-red-200'
+        }`}>
+          <div className={`text-sm ${
+            authError.includes('재발송되었습니다') 
+              ? 'text-green-600' 
+              : 'text-red-600'
+          }`}>
+            {authError}
+          </div>
+          
+          {/* 이메일 인증 필요 시 재발송 버튼 표시 */}
+          {needsEmailVerification && (
+            <div className="mt-3 pt-3 border-t border-red-300">
+              <div className="text-xs text-red-500 mb-2">
+                📧 <strong>{userEmail}</strong>로 인증 이메일을 받지 못하셨나요?
+              </div>
+              <button
+                type="button"
+                onClick={resendVerificationEmail}
+                disabled={isLoading}
+                className="text-xs bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded border border-red-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="inline h-3 w-3 mr-1 animate-spin" />
+                    재발송 중...
+                  </>
+                ) : (
+                  '인증 이메일 재발송'
+                )}
+              </button>
+            </div>
+          )}
         </div>
       )}
 
