@@ -1,0 +1,54 @@
+[build]
+  publish = ".next"
+  command = "pnpm run build"
+
+[build.environment]
+  NEXT_TELEMETRY_DISABLED = "1"
+
+# Next.js 정적 파일 서빙
+[[redirects]]
+  from = "/_next/static/*"
+  to = "/_next/static/:splat"
+  status = 200
+
+# Next.js API Routes 처리
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+# SPA 라우팅 지원
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Identity 서비스 활성화
+[dev]
+  functions = "netlify/functions"
+  publish = ".next"
+
+# Netlify Functions 설정
+[functions]
+  node_bundler = "esbuild"
+
+# Build 플러그인
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# 환경 변수 (로컬 개발용)
+[context.development.environment]
+  NEXT_PUBLIC_NETLIFY_SITE_URL = "http://localhost:8888"
+
+# 프로덕션 환경
+[context.production.environment]
+  NEXT_PUBLIC_NETLIFY_SITE_URL = "$URL"
+
+# 헤더 설정
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://identity.netlify.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.netlify.com https://*.supabase.co; frame-src https://identity.netlify.com;" 
