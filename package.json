@@ -15,6 +15,7 @@
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
     "@neondatabase/serverless": "^1.0.1",
+    "@paralleldrive/cuid2": "^2.2.2",
     "@supabase/gotrue-js": "^2.71.1",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.7.0",
