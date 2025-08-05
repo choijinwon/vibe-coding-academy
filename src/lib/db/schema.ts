@@ -130,6 +130,31 @@ export const communityComments = pgTable('community_comments', {
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
+// Payments table
+export const payments = pgTable('payments', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar('order_id', { length: 255 }).unique().notNull(),
+  userId: uuid('user_id').references(() => users.id),
+  courseId: uuid('course_id').references(() => courses.id),
+  amount: integer('amount').notNull(),
+  provider: varchar('provider', { length: 50 }).notNull(), // tosspayments, iamport
+  paymentKey: varchar('payment_key', { length: 255 }),
+  method: varchar('method', { length: 50 }), // card, bank, phone, kakaopay, naverpay
+  status: varchar('status', { length: 50 }).default('pending'), // pending, paid, failed, cancelled, refunded
+  customerName: varchar('customer_name', { length: 255 }),
+  customerEmail: varchar('customer_email', { length: 255 }),
+  receiptUrl: varchar('receipt_url', { length: 500 }),
+  failReason: text('fail_reason'),
+  approvedAt: timestamp('approved_at'),
+  cancelledAt: timestamp('cancelled_at'),
+  refundedAt: timestamp('refunded_at'),
+  refundReason: text('refund_reason'),
+  refundAmount: integer('refund_amount'),
+  metadata: jsonb('metadata'), // 추가 결제 정보
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
 // SQL function for UUID generation (imported above)
 
 // Export types
@@ -152,4 +177,6 @@ export type NewAnnouncementRead = typeof announcementReads.$inferInsert;
 export type CommunityPost = typeof communityPosts.$inferSelect;
 export type NewCommunityPost = typeof communityPosts.$inferInsert;
 export type CommunityComment = typeof communityComments.$inferSelect;
-export type NewCommunityComment = typeof communityComments.$inferInsert; 
+export type NewCommunityComment = typeof communityComments.$inferInsert;
+export type Payment = typeof payments.$inferSelect;
+export type NewPayment = typeof payments.$inferInsert; 

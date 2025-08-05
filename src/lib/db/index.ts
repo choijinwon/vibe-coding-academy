@@ -6,8 +6,20 @@ import * as schema from './schema';
 const sql = neon(process.env.DATABASE_URL!);
 export const db = drizzle(sql, { schema });
 
-// 테이블 export
-export * from './schema';
+// 스키마 테이블들을 개별적으로 export
+export const {
+  users,
+  courses,
+  courseRegistrations,
+  attendance,
+  assignments,
+  assignmentSubmissions,
+  announcements,
+  announcementReads,
+  communityPosts,
+  communityComments,
+  payments
+} = schema;
 
 // 유틸리티 함수들
 export const getDb = () => db;

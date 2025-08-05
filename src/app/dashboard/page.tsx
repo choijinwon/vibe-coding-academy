@@ -19,7 +19,9 @@ import {
   ArrowRight,
   Clock,
   Target,
-  TrendingUp
+  TrendingUp,
+  BarChart3,
+  CheckCircle
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -53,6 +55,7 @@ export default function DashboardPage() {
       { href: '/courses', label: '강의 목록', icon: BookOpen },
       { href: '/announcements', label: '공지사항', icon: Bell },
       { href: '/community', label: '커뮤니티', icon: MessageSquare },
+      { href: '/analytics', label: '학습 분석', icon: BarChart3 },
     ];
 
     const studentItems = [
@@ -75,7 +78,7 @@ export default function DashboardPage() {
       { href: '/admin/courses', label: '강의 관리', icon: BookOpen },
       { href: '/admin/users', label: '사용자 관리', icon: Users },
       { href: '/admin/registrations', label: '수강신청 관리', icon: Award },
-      { href: '/admin/analytics', label: '분석', icon: TrendingUp },
+      { href: '/admin/analytics', label: '종합 분석', icon: TrendingUp },
       { href: '/instructor/announcements', label: '공지사항 관리', icon: Bell },
       ...commonItems,
     ];
@@ -129,6 +132,13 @@ export default function DashboardPage() {
             href: '/community',
             icon: MessageSquare,
             color: 'bg-orange-500'
+          },
+          {
+            title: '학습 분석',
+            description: '강의 성과와 학생 진도를 분석하세요',
+            href: '/analytics',
+            icon: BarChart3,
+            color: 'bg-indigo-500'
           }
         ];
       case 'admin':
@@ -160,6 +170,13 @@ export default function DashboardPage() {
             href: '/community',
             icon: MessageSquare,
             color: 'bg-orange-500'
+          },
+          {
+            title: '종합 분석',
+            description: '전체 플랫폼 성과를 분석하세요',
+            href: '/analytics',
+            icon: TrendingUp,
+            color: 'bg-red-500'
           }
         ];
       default:
@@ -191,6 +208,13 @@ export default function DashboardPage() {
             href: '/community/write',
             icon: MessageSquare,
             color: 'bg-orange-500'
+          },
+          {
+            title: '학습 분석',
+            description: '내 학습 진도와 성과를 확인하세요',
+            href: '/analytics',
+            icon: BarChart3,
+            color: 'bg-indigo-500'
           }
         ];
     }
@@ -219,7 +243,7 @@ export default function DashboardPage() {
                  userRole === 'instructor' ? '강사' : '관리자'}
               </span>
               <Button onClick={logout} variant="outline" size="sm">
-                <LogOut className="h-4 w-4 mr-2" />
+                <LogOut className="w-4 h-4 mr-2" />
                 로그아웃
               </Button>
             </div>
@@ -229,254 +253,165 @@ export default function DashboardPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            안녕하세요, {userName}님! 👋
-          </h1>
-          <p className="text-gray-600">
-            {userRole === 'student' ? '오늘도 열심히 학습해보세요!' :
-             userRole === 'instructor' ? '학생들의 성장을 함께 만들어가세요!' :
-             '바이브코딩 아카데미를 관리해주세요!'}
-          </p>
+        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg p-8 mb-8 text-white">
+          <div className="max-w-4xl">
+            <h1 className="text-3xl font-bold mb-2">
+              환영합니다, {userName}님! 👋
+            </h1>
+            <p className="text-indigo-100 text-lg">
+              {userRole === 'student' && '오늘도 새로운 것을 배워보세요!'}
+              {userRole === 'instructor' && '학생들의 성장을 도와주세요!'}
+              {userRole === 'admin' && '플랫폼을 효율적으로 관리하세요!'}
+            </p>
+          </div>
         </div>
 
         {/* Quick Actions */}
         <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">빠른 실행</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">빠른 실행</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {quickActions.map((action, index) => (
               <Link
                 key={index}
                 href={action.href}
-                className="group bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
+                className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow duration-200 overflow-hidden group"
               >
-                <div className="flex items-center">
-                  <div className={`flex-shrink-0 ${action.color} p-3 rounded-lg`}>
-                    <action.icon className="h-6 w-6 text-white" />
+                <div className="p-6">
+                  <div className="flex items-center">
+                    <div className={`p-3 rounded-lg ${action.color} text-white group-hover:scale-110 transition-transform duration-200`}>
+                      <action.icon className="w-6 h-6" />
+                    </div>
+                    <div className="ml-4 flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                        {action.title}
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {action.description}
+                      </p>
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all duration-200" />
                   </div>
-                  <div className="ml-4 flex-1">
-                    <h3 className="text-lg font-medium text-gray-900 group-hover:text-indigo-600">
-                      {action.title}
-                    </h3>
-                    <p className="text-sm text-gray-500">{action.description}</p>
-                  </div>
-                  <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-indigo-600 transition-colors" />
                 </div>
               </Link>
             ))}
           </div>
         </div>
 
-        {/* Statistics Cards (역할별 다른 통계) */}
+        {/* Menu Items */}
         <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">현황</h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {userRole === 'student' && (
-              <>
-                <div className="bg-white p-6 rounded-lg shadow-sm">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <BookOpen className="h-8 w-8 text-blue-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-500">수강 중인 강의</p>
-                      <p className="text-2xl font-bold text-gray-900">3개</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-white p-6 rounded-lg shadow-sm">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <FileText className="h-8 w-8 text-green-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-500">제출할 과제</p>
-                      <p className="text-2xl font-bold text-gray-900">2개</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-white p-6 rounded-lg shadow-sm">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <Calendar className="h-8 w-8 text-purple-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-500">출석률</p>
-                      <p className="text-2xl font-bold text-gray-900">95%</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-white p-6 rounded-lg shadow-sm">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <Award className="h-8 w-8 text-yellow-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-500">완료한 강의</p>
-                      <p className="text-2xl font-bold text-gray-900">1개</p>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {userRole === 'instructor' && (
-              <>
-                <div className="bg-white p-6 rounded-lg shadow-sm">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <BookOpen className="h-8 w-8 text-blue-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-500">담당 강의</p>
-                      <p className="text-2xl font-bold text-gray-900">2개</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-white p-6 rounded-lg shadow-sm">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <Users className="h-8 w-8 text-green-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-500">총 학생 수</p>
-                      <p className="text-2xl font-bold text-gray-900">47명</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-white p-6 rounded-lg shadow-sm">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <FileText className="h-8 w-8 text-purple-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-500">채점 대기</p>
-                      <p className="text-2xl font-bold text-gray-900">12개</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-white p-6 rounded-lg shadow-sm">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <TrendingUp className="h-8 w-8 text-yellow-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-500">평균 만족도</p>
-                      <p className="text-2xl font-bold text-gray-900">4.8</p>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {userRole === 'admin' && (
-              <>
-                <div className="bg-white p-6 rounded-lg shadow-sm">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <BookOpen className="h-8 w-8 text-blue-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-500">전체 강의</p>
-                      <p className="text-2xl font-bold text-gray-900">8개</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-white p-6 rounded-lg shadow-sm">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <Users className="h-8 w-8 text-green-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-500">전체 사용자</p>
-                      <p className="text-2xl font-bold text-gray-900">234명</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-white p-6 rounded-lg shadow-sm">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <Award className="h-8 w-8 text-purple-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-500">승인 대기</p>
-                      <p className="text-2xl font-bold text-gray-900">5개</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-white p-6 rounded-lg shadow-sm">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <TrendingUp className="h-8 w-8 text-yellow-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-500">이번 달 수익</p>
-                      <p className="text-2xl font-bold text-gray-900">₩2,400만</p>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Navigation Menu */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">메뉴</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">메뉴</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {menuItems.map((item, index) => (
               <Link
                 key={index}
                 href={item.href}
-                className="group bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
+                className="bg-white rounded-lg shadow-sm border p-6 hover:shadow-md transition-shadow duration-200 group"
               >
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <item.icon className="h-8 w-8 text-indigo-600 group-hover:text-indigo-700" />
+                <div className="flex flex-col items-center text-center">
+                  <div className="p-3 bg-gray-100 rounded-lg group-hover:bg-indigo-100 transition-colors duration-200">
+                    <item.icon className="w-8 h-8 text-gray-600 group-hover:text-indigo-600 transition-colors duration-200" />
                   </div>
-                  <div className="ml-4">
-                    <h3 className="text-lg font-medium text-gray-900 group-hover:text-indigo-600">
-                      {item.label}
-                    </h3>
-                  </div>
-                  <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-indigo-600 transition-colors ml-auto" />
+                  <h3 className="mt-4 text-lg font-medium text-gray-900 group-hover:text-indigo-600 transition-colors duration-200">
+                    {item.label}
+                  </h3>
                 </div>
               </Link>
             ))}
           </div>
         </div>
 
-        {/* Recent Activity */}
-        <div>
-          <h2 className="text-xl font-bold text-gray-900 mb-4">최근 활동</h2>
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="space-y-4">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <Clock className="h-5 w-5 text-gray-400" />
+        {/* Recent Activity or Stats */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* 최근 활동 */}
+          <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">최근 활동</h3>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-900">새로운 과제를 제출했습니다</p>
+                    <p className="text-xs text-gray-500">2시간 전</p>
+                  </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-900">React 강의에 새로운 과제가 등록되었습니다.</p>
-                  <p className="text-xs text-gray-500">2시간 전</p>
+                
+                <div className="flex items-center space-x-3">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <BookOpen className="w-4 h-4 text-blue-600" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-900">React 강의에 참여했습니다</p>
+                    <p className="text-xs text-gray-500">1일 전</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                      <MessageSquare className="w-4 h-4 text-purple-600" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-900">커뮤니티에 질문을 올렸습니다</p>
+                    <p className="text-xs text-gray-500">3일 전</p>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <Clock className="h-5 w-5 text-gray-400" />
+            </div>
+          </div>
+
+          {/* 통계 */}
+          <div className="bg-white rounded-lg shadow-sm border">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">나의 현황</h3>
+            </div>
+            <div className="p-6 space-y-6">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">출석률</span>
+                  <span className="text-sm font-semibold text-green-600">92%</span>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-900">Python 백엔드 강의 출석이 체크되었습니다.</p>
-                  <p className="text-xs text-gray-500">1일 전</p>
+                <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-green-500 h-2 rounded-full" style={{ width: '92%' }}></div>
                 </div>
               </div>
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <Clock className="h-5 w-5 text-gray-400" />
+
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">과제 완성도</span>
+                  <span className="text-sm font-semibold text-blue-600">85%</span>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm text-gray-900">새로운 공지사항이 등록되었습니다.</p>
-                  <p className="text-xs text-gray-500">3일 전</p>
+                <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: '85%' }}></div>
                 </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">학습 진도</span>
+                  <span className="text-sm font-semibold text-purple-600">78%</span>
+                </div>
+                <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-purple-500 h-2 rounded-full" style={{ width: '78%' }}></div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-gray-200">
+                <Link 
+                  href="/analytics"
+                  className="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+                >
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  상세 분석 보기
+                </Link>
               </div>
             </div>
           </div>
