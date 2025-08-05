@@ -122,6 +122,13 @@ export default function DashboardPage() {
             href: '/instructor/announcements',
             icon: Bell,
             color: 'bg-yellow-500'
+          },
+          {
+            title: '커뮤니티 답변',
+            description: '학생들의 질문에 답변해주세요',
+            href: '/community',
+            icon: MessageSquare,
+            color: 'bg-orange-500'
           }
         ];
       case 'admin':
@@ -146,6 +153,13 @@ export default function DashboardPage() {
             href: '/instructor/announcements',
             icon: Bell,
             color: 'bg-yellow-500'
+          },
+          {
+            title: '커뮤니티 관리',
+            description: '커뮤니티를 관리하고 답변해주세요',
+            href: '/community',
+            icon: MessageSquare,
+            color: 'bg-orange-500'
           }
         ];
       default:
@@ -170,6 +184,13 @@ export default function DashboardPage() {
             href: '/attendance',
             icon: Calendar,
             color: 'bg-purple-500'
+          },
+          {
+            title: '질문하기',
+            description: '궁금한 점을 커뮤니티에 질문하세요',
+            href: '/community/write',
+            icon: MessageSquare,
+            color: 'bg-orange-500'
           }
         ];
     }
