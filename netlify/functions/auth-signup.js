@@ -149,7 +149,7 @@ exports.handler = async (event, context) => {
 
       // Resend API를 사용한 실제 이메일 발송
       const emailResponse = await resend.emails.send({
-        from: 'noreply@vibecoding.academy',
+        from: 'onboarding@resend.dev', // 임시 발송자 주소 (테스트용)
         to: [email],
         subject: '[바이브코딩 아카데미] 이메일 인증을 완료해주세요 ✨',
         html: `
