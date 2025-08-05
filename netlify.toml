@@ -28,6 +28,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/auth/verify-email"
+  to = "/.netlify/functions/auth-verify-email"
+  status = 200
+
+[[redirects]]
   from = "/api/auth/resend-confirmation"
   to = "/.netlify/functions/auth-resend-confirmation"
   status = 200
