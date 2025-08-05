@@ -87,10 +87,19 @@ export const announcements = pgTable('announcements', {
   content: text('content').notNull(),
   authorId: uuid('author_id').references(() => users.id),
   courseId: uuid('course_id').references(() => courses.id), // null for global announcements
+  category: varchar('category', { length: 50 }).default('general'), // general, academic, event, urgent, maintenance
   priority: varchar('priority', { length: 50 }).default('normal'), // low, normal, high, urgent
   isEmailSent: boolean('is_email_sent').default(false),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Announcement Reads table (for tracking read status)
+export const announcementReads = pgTable('announcement_reads', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  announcementId: uuid('announcement_id').references(() => announcements.id),
+  userId: uuid('user_id').references(() => users.id),
+  readAt: timestamp('read_at').defaultNow(),
 });
 
 // Community Posts table (Q&A, Free Board)
@@ -138,6 +147,8 @@ export type AssignmentSubmission = typeof assignmentSubmissions.$inferSelect;
 export type NewAssignmentSubmission = typeof assignmentSubmissions.$inferInsert;
 export type Announcement = typeof announcements.$inferSelect;
 export type NewAnnouncement = typeof announcements.$inferInsert;
+export type AnnouncementRead = typeof announcementReads.$inferSelect;
+export type NewAnnouncementRead = typeof announcementReads.$inferInsert;
 export type CommunityPost = typeof communityPosts.$inferSelect;
 export type NewCommunityPost = typeof communityPosts.$inferInsert;
 export type CommunityComment = typeof communityComments.$inferSelect;

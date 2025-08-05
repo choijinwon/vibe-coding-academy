@@ -67,6 +67,7 @@ export default function DashboardPage() {
       { href: '/instructor/students', label: '학생 관리', icon: Users },
       { href: '/instructor/assignments', label: '과제 관리', icon: FileText },
       { href: '/instructor/attendance', label: '출석 관리', icon: Calendar },
+      { href: '/instructor/announcements', label: '공지사항 관리', icon: Bell },
       ...commonItems,
     ];
 
@@ -75,6 +76,7 @@ export default function DashboardPage() {
       { href: '/admin/users', label: '사용자 관리', icon: Users },
       { href: '/admin/registrations', label: '수강신청 관리', icon: Award },
       { href: '/admin/analytics', label: '분석', icon: TrendingUp },
+      { href: '/instructor/announcements', label: '공지사항 관리', icon: Bell },
       ...commonItems,
     ];
 
@@ -113,6 +115,13 @@ export default function DashboardPage() {
             href: '/instructor/assignments/create',
             icon: FileText,
             color: 'bg-purple-500'
+          },
+          {
+            title: '공지사항 작성',
+            description: '학생들에게 중요한 소식을 전달하세요',
+            href: '/instructor/announcements',
+            icon: Bell,
+            color: 'bg-yellow-500'
           }
         ];
       case 'admin':
@@ -134,7 +143,7 @@ export default function DashboardPage() {
           {
             title: '공지사항 작성',
             description: '새로운 공지사항을 작성하세요',
-            href: '/announcements/create',
+            href: '/instructor/announcements',
             icon: Bell,
             color: 'bg-yellow-500'
           }
