@@ -1,108 +1,198 @@
 // User types
-export type UserRole = 'student' | 'instructor' | 'admin';
-
 export interface User {
   id: string;
   email: string;
-  name: string;
-  phone?: string;
-  role: UserRole;
-  avatar?: string;
-  bio?: string;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  name?: string;
+  role: 'student' | 'instructor' | 'admin';
+  user_metadata?: {
+    full_name?: string;
+    role?: string;
+  };
 }
 
 // Course types
 export interface Course {
   id: string;
   title: string;
-  description?: string;
-  curriculum?: string;
-  instructorId: string;
-  instructor?: User;
+  description: string;
   price: number;
-  maxStudents: number;
-  currentStudents: number;
-  startDate: Date;
-  endDate: Date;
-  isActive: boolean;
   thumbnail?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  instructorId: string;
+  instructorName?: string;
+  duration?: number;
+  level?: 'beginner' | 'intermediate' | 'advanced';
+  isActive: boolean;
+  maxStudents?: number;
+  currentStudents?: number;
+  startDate?: string;
+  endDate?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-// Enrollment types
-export type EnrollmentStatus = 'pending' | 'approved' | 'rejected' | 'completed';
-
-export interface Enrollment {
+// Assignment types
+export interface Assignment {
   id: string;
-  studentId: string;
-  student?: User;
   courseId: string;
-  course?: Course;
-  status: EnrollmentStatus;
-  enrolledAt: Date;
-  completedAt?: Date;
+  title: string;
+  description: string;
+  dueDate?: string;
+  maxScore: number;
+  fileUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+  submission?: AssignmentSubmission;
 }
 
-// Netlify Identity types
-export interface NetlifyUser {
+export interface AssignmentSubmission {
   id: string;
-  aud: string;
-  role: string;
-  email: string;
-  email_confirmed_at: string;
-  phone: string;
-  confirmation_sent_at: string;
-  confirmed_at: string;
-  last_sign_in_at: string;
-  app_metadata: {
-    provider: string;
-    roles?: string[];
-  };
-  user_metadata: {
-    full_name?: string;
-    name?: string;
-    role?: UserRole;
-    phone?: string;
-    avatar_url?: string;
-  };
-  identities: any[];
-  created_at: string;
-  updated_at: string;
-  token?: {
-    access_token: string;
-    expires_at: number;
-    refresh_token: string;
-    token_type: string;
-  };
+  assignmentId: string;
+  userId: string;
+  fileUrl?: string;
+  content?: string;
+  score?: number;
+  feedback?: string;
+  submittedAt: string;
+  gradedAt?: string;
 }
+
+// Announcement types
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  authorId: string;
+  authorName?: string;
+  courseId?: string;
+  courseName?: string;
+  category?: string;
+  priority: 'urgent' | 'important' | 'normal';
+  isEmailSent: boolean;
+  createdAt: string;
+  updatedAt: string;
+  isRead?: boolean;
+  readAt?: string;
+}
+
+// Community types
+export interface CommunityPost {
+  id: string;
+  title: string;
+  content: string;
+  authorId: string;
+  authorName?: string;
+  courseId?: string;
+  courseName?: string;
+  category: 'qna' | 'free' | 'notice';
+  isAnswered: boolean;
+  viewCount: number;
+  likeCount: number;
+  commentCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CommunityComment {
+  id: string;
+  postId: string;
+  authorId: string;
+  authorName?: string;
+  content: string;
+  parentId?: string;
+  isAnswer: boolean;
+  likeCount: number;
+  createdAt: string;
+  updatedAt: string;
+  replies?: CommunityComment[];
+}
+
+// Attendance types
+export interface Attendance {
+  id: string;
+  userId: string;
+  courseId: string;
+  date: string;
+  status: 'present' | 'absent' | 'late';
+  notes?: string;
+  createdAt: string;
+}
+
+// Navigation types
+export type RootStackParamList = {
+  Auth: undefined;
+  Main: undefined;
+  Login: undefined;
+  Register: undefined;
+  Dashboard: undefined;
+  Courses: undefined;
+  CourseDetail: { courseId: string };
+  Assignments: undefined;
+  AssignmentDetail: { assignmentId: string };
+  Announcements: undefined;
+  AnnouncementDetail: { announcementId: string };
+  Community: undefined;
+  CommunityPost: { postId: string };
+  CommunityWrite: undefined;
+  Profile: undefined;
+  VideoPlayer: { videoUrl: string; title?: string };
+  Payment: { courseId: string };
+};
+
+export type TabParamList = {
+  Dashboard: undefined;
+  Courses: undefined;
+  Assignments: undefined;
+  Community: undefined;
+  Profile: undefined;
+};
 
 // API Response types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T> {
   success: boolean;
   data?: T;
-  error?: string;
   message?: string;
+  error?: string;
 }
 
-export interface PaginationParams {
-  page?: number;
-  limit?: number;
-  search?: string;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+// Analytics types
+export interface AnalyticsData {
+  totalStudents: number;
+  totalCourses: number;
+  averageAttendanceRate: number;
+  assignmentCompletionRate: number;
+  activeStudentsThisWeek: number;
+  recentActivity: {
+    date: string;
+    students: number;
+    submissions: number;
+    attendance: number;
+  }[];
 }
 
-export interface PaginatedResponse<T> {
-  data: T[];
-  pagination: {
-    currentPage: number;
-    totalPages: number;
-    totalItems: number;
-    hasNext: boolean;
-    hasPrev: boolean;
+// Payment types
+export interface PaymentRequest {
+  courseId: string;
+  userId: string;
+  customerName: string;
+  customerEmail: string;
+  provider: 'tosspayments' | 'iamport';
+  method?: 'card' | 'bank' | 'kakaopay' | 'naverpay';
+}
+
+// Notification types
+export interface NotificationData {
+  title: string;
+  body: string;
+  data?: {
+    type: 'announcement' | 'assignment' | 'community' | 'course';
+    id: string;
   };
+}
+
+// App State types
+export interface AppState {
+  isLoading: boolean;
+  isOnline: boolean;
+  user: User | null;
+  notifications: NotificationData[];
 } 

@@ -11,13 +11,89 @@
   to = "/_next/static/:splat"
   status = 200
 
-# Next.js API Routes 처리
+# Netlify Functions 개별 매핑
 [[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
+  from = "/api/auth/login"
+  to = "/.netlify/functions/auth-login"
   status = 200
 
-# SPA 라우팅 지원
+[[redirects]]
+  from = "/api/auth/signup"
+  to = "/.netlify/functions/auth-signup"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/forgot-password"
+  to = "/.netlify/functions/auth-forgot-password"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/resend-confirmation"
+  to = "/.netlify/functions/auth-resend-confirmation"
+  status = 200
+
+[[redirects]]
+  from = "/api/announcements"
+  to = "/.netlify/functions/announcements"
+  status = 200
+
+[[redirects]]
+  from = "/api/announcements/*"
+  to = "/.netlify/functions/announcements/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/assignments"
+  to = "/.netlify/functions/assignments"
+  status = 200
+
+[[redirects]]
+  from = "/api/assignments/*"
+  to = "/.netlify/functions/assignments/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/attendance"
+  to = "/.netlify/functions/attendance"
+  status = 200
+
+[[redirects]]
+  from = "/api/attendance/*"
+  to = "/.netlify/functions/attendance/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/community/*"
+  to = "/.netlify/functions/community/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/courses"
+  to = "/.netlify/functions/courses"
+  status = 200
+
+[[redirects]]
+  from = "/api/courses/*"
+  to = "/.netlify/functions/courses/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/analytics/*"
+  to = "/.netlify/functions/analytics/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/payments/*"
+  to = "/.netlify/functions/payments/:splat"
+  status = 200
+
+# 나머지 API Routes는 Next.js로 처리 (fallback)
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# SPA 라우팅 지원 (가장 마지막에 위치)
 [[redirects]]
   from = "/*"
   to = "/index.html"
