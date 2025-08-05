@@ -1,4 +1,6 @@
-// Netlify Functions - 이메일 인증 (CommonJS 형태)
+// Netlify Functions - 이메일 인증 (실제 DB 연동)
+const { neon } = require('@neondatabase/serverless');
+
 exports.handler = async (event, context) => {
   // CORS 헤더 설정
   const headers = {
@@ -25,6 +27,9 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({ error: 'Method Not Allowed' }),
     };
   }
+
+  // 데이터베이스 연결
+  const sql = neon(process.env.DATABASE_URL);
 
   try {
     const { token, email } = JSON.parse(event.body);
@@ -54,55 +59,88 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // 토큰에서 타임스탬프 추출하여 만료 확인
-    try {
-      const tokenParts = token.split('_');
-      if (tokenParts.length >= 2) {
-        const timestamp = parseInt(tokenParts[1]);
-        const tokenAge = Date.now() - timestamp;
-        const maxAge = 24 * 60 * 60 * 1000; // 24시간
+    // 1. 데이터베이스에서 토큰과 일치하는 사용자 찾기
+    const users = await sql`
+      SELECT 
+        id, 
+        email, 
+        name, 
+        role, 
+        email_verified,
+        metadata,
+        created_at
+      FROM users 
+      WHERE 
+        email_verified = false 
+        AND metadata->>'emailVerificationToken' = ${token}
+        AND (email = ${email} OR ${email} IS NULL)
+    `;
 
-        if (tokenAge > maxAge) {
-          return {
-            statusCode: 400,
-            headers,
-            body: JSON.stringify({ 
-              error: '인증 링크가 만료되었습니다. 새로운 인증 이메일을 요청해주세요.',
-              code: 'TOKEN_EXPIRED',
-              expired: true,
-            }),
-          };
-        }
-      }
-    } catch (parseError) {
-      console.error('토큰 파싱 오류:', parseError);
-    }
-
-    // Mock 인증 처리 (실제로는 데이터베이스에서 토큰 확인 및 사용자 활성화)
-    const mockVerificationResult = await verifyEmailToken(token, email);
-
-    if (!mockVerificationResult.success) {
+    if (users.length === 0) {
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({ 
-          error: mockVerificationResult.error,
-          code: mockVerificationResult.code,
-          expired: mockVerificationResult.expired || false,
+          error: '유효하지 않은 인증 토큰이거나 이미 인증된 계정입니다',
+          code: 'INVALID_TOKEN'
         }),
       };
     }
 
-    // 인증 성공
-    console.log(`✅ 이메일 인증 성공: ${email}`);
-    
+    const user = users[0];
+    const metadata = user.metadata || {};
+
+    // 2. 토큰 만료 확인
+    const tokenExpires = metadata.emailVerificationTokenExpires;
+    if (tokenExpires && new Date(tokenExpires) < new Date()) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ 
+          error: '인증 링크가 만료되었습니다. 새로운 인증 이메일을 요청해주세요.',
+          code: 'TOKEN_EXPIRED',
+          expired: true,
+        }),
+      };
+    }
+
+    // 3. 이메일 인증 완료 처리
+    const updatedUsers = await sql`
+      UPDATE users 
+      SET 
+        email_verified = true,
+        updated_at = NOW(),
+        metadata = jsonb_set(
+          COALESCE(metadata, '{}'),
+          '{emailVerifiedAt}',
+          to_jsonb(NOW())
+        )
+      WHERE id = ${user.id}
+      RETURNING id, email, name, role, email_verified, updated_at
+    `;
+
+    const updatedUser = updatedUsers[0];
+
+    console.log(`✅ 이메일 인증 완료:`);
+    console.log(`- 사용자 ID: ${updatedUser.id}`);
+    console.log(`- 이메일: ${updatedUser.email}`);
+    console.log(`- 인증 시간: ${updatedUser.updated_at}`);
+
+    // 4. 성공 응답
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         success: true,
         message: '이메일 인증이 완료되었습니다! 이제 로그인할 수 있습니다.',
-        user: mockVerificationResult.user,
+        user: {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          name: updatedUser.name,
+          role: updatedUser.role,
+          emailVerified: updatedUser.email_verified,
+          verifiedAt: updatedUser.updated_at,
+        },
         verified: true,
       }),
     };
@@ -119,72 +157,4 @@ exports.handler = async (event, context) => {
       }),
     };
   }
-};
-
-// Mock 이메일 인증 로직
-async function verifyEmailToken(token, email) {
-  try {
-    // 시뮬레이션 지연
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    // 테스트용 특별 토큰들
-    if (token === 'verify_expired_token') {
-      return {
-        success: false,
-        error: '인증 링크가 만료되었습니다.',
-        code: 'TOKEN_EXPIRED',
-        expired: true,
-      };
-    }
-
-    if (token === 'verify_invalid_token') {
-      return {
-        success: false,
-        error: '유효하지 않은 인증 토큰입니다.',
-        code: 'INVALID_TOKEN',
-      };
-    }
-
-    // 정상적인 토큰 형식인지 확인
-    if (!token.startsWith('verify_')) {
-      return {
-        success: false,
-        error: '유효하지 않은 토큰 형식입니다.',
-        code: 'INVALID_TOKEN_FORMAT',
-      };
-    }
-
-    // Mock 사용자 정보 (실제로는 데이터베이스에서 조회)
-    const mockUser = {
-      id: `user_${email ? email.split('@')[0] : 'unknown'}_verified`,
-      email: email || 'unknown@example.com',
-      name: '인증된 사용자',
-      role: 'student',
-      emailVerified: true,
-      verifiedAt: new Date().toISOString(),
-      metadata: {
-        authProvider: 'netlify-identity',
-        verificationMethod: 'email',
-        verificationToken: token,
-      },
-    };
-
-    console.log(`📧 사용자 이메일 인증 완료:`);
-    console.log(`- 사용자 ID: ${mockUser.id}`);
-    console.log(`- 이메일: ${mockUser.email}`);
-    console.log(`- 인증 시간: ${mockUser.verifiedAt}`);
-
-    return {
-      success: true,
-      user: mockUser,
-    };
-
-  } catch (error) {
-    console.error('Mock 인증 처리 오류:', error);
-    return {
-      success: false,
-      error: '인증 처리 중 오류가 발생했습니다.',
-      code: 'VERIFICATION_ERROR',
-    };
-  }
-} 
+}; 

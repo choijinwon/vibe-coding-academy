@@ -1,10 +1,14 @@
-// Netlify Functions - 로그인 (CommonJS 형태)
+// Netlify Functions - 로그인 (실제 DB 연동)
+const { neon } = require('@neondatabase/serverless');
+const bcrypt = require('bcryptjs');
+
 exports.handler = async (event, context) => {
   // CORS 헤더 설정
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Content-Type': 'application/json',
   };
 
   // OPTIONS 요청 처리 (CORS preflight)
@@ -25,6 +29,9 @@ exports.handler = async (event, context) => {
     };
   }
 
+  // 데이터베이스 연결
+  const sql = neon(process.env.DATABASE_URL);
+
   try {
     const { email, password } = JSON.parse(event.body);
 
@@ -33,27 +40,82 @@ exports.handler = async (event, context) => {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: '이메일과 비밀번호가 필요합니다' }),
+        body: JSON.stringify({ error: '이메일과 비밀번호를 입력해주세요' }),
       };
     }
 
-    // Mock 로그인 처리 - 실제 배포에서는 DB와 연동 필요
+    console.log(`🔐 로그인 시도: ${email}`);
+
+    // 1. 하드코딩된 테스트 계정 확인 (기존 테스트용)
     const testAccounts = {
-      'test-db@example.com': 'Password123!',
-      'abyys83@gmail.com': 'Password123!',
-      'test@example.com': 'Password123!',
-      'teacher@example.com': 'Password123!',
-      'admin@example.com': 'Password123!',
+      'student@test.com': { password: 'password', role: 'student', name: '테스트 학생' },
+      'instructor@test.com': { password: 'password', role: 'instructor', name: '테스트 강사' },
+      'admin@test.com': { password: 'password', role: 'admin', name: '테스트 관리자' },
     };
 
-    // 이메일 인증이 필요한 계정들 (Mock)
-    const unverifiedEmails = [
-      'newuser@example.com',
-      'unverified@example.com',
-    ];
+    // 테스트 계정 로그인
+    if (testAccounts[email] && testAccounts[email].password === password) {
+      const testAccount = testAccounts[email];
+      console.log(`✅ 테스트 계정 로그인 성공: ${email} (${testAccount.role})`);
 
-    // 계정 확인
-    if (!testAccounts[email] || testAccounts[email] !== password) {
+      const mockToken = `test_token_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          success: true,
+          user: {
+            id: `test_${email.split('@')[0]}`,
+            email: email,
+            name: testAccount.name,
+            role: testAccount.role,
+            emailVerified: true,
+          },
+          access_token: mockToken,
+          message: '로그인 성공',
+        }),
+      };
+    }
+
+    // 2. 실제 데이터베이스에서 사용자 조회
+    const users = await sql`
+      SELECT 
+        id,
+        email,
+        name,
+        role,
+        email_verified,
+        metadata,
+        created_at
+      FROM users 
+      WHERE email = ${email}
+    `;
+
+    if (users.length === 0) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: '등록되지 않은 이메일입니다' }),
+      };
+    }
+
+    const user = users[0];
+    const metadata = user.metadata || {};
+    const hashedPassword = metadata.hashedPassword;
+
+    // 3. 비밀번호 확인
+    if (!hashedPassword) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: '비밀번호가 설정되지 않은 계정입니다' }),
+      };
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, hashedPassword);
+    if (!isPasswordValid) {
+      console.log(`❌ 로그인 실패 - 잘못된 비밀번호: ${email}`);
       return {
         statusCode: 400,
         headers,
@@ -61,74 +123,66 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // 이메일 인증 확인
-    if (unverifiedEmails.includes(email)) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: '이메일 인증이 필요합니다. 가입 시 발송된 인증 이메일을 확인해주세요.' }),
-      };
-    }
+    // 4. 이메일 인증 확인 (선택사항 - 필요에 따라 주석 해제)
+    // if (!user.email_verified) {
+    //   return {
+    //     statusCode: 400,
+    //     headers,
+    //     body: JSON.stringify({ 
+    //       error: '이메일 인증을 완료해주세요',
+    //       code: 'EMAIL_NOT_VERIFIED',
+    //       needsVerification: true,
+    //     }),
+    //   };
+    // }
 
-    // 사용자 역할 결정
-    let role = 'student';
-    let fullName = '사용자';
+    // 5. 로그인 성공 - 토큰 생성
+    const accessToken = `auth_${user.id}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
-    if (email.includes('teacher')) {
-      role = 'instructor';
-      fullName = '테스트 강사';
-    } else if (email.includes('admin')) {
-      role = 'admin';
-      fullName = '관리자';
-    } else if (email === 'abyys83@gmail.com') {
-      fullName = '최진원';
-    } else if (email === 'test-db@example.com') {
-      fullName = '테스트 사용자';
-    }
+    // 6. 마지막 로그인 시간 업데이트
+    await sql`
+      UPDATE users 
+      SET 
+        metadata = jsonb_set(
+          COALESCE(metadata, '{}'),
+          '{lastLoginAt}',
+          to_jsonb(NOW())
+        ),
+        updated_at = NOW()
+      WHERE id = ${user.id}
+    `;
 
-    // Mock 사용자 객체 생성
-    const user = {
-      id: `user_${email.split('@')[0]}_${Date.now()}`,
-      email,
-      aud: 'authenticated',
-      role,
-      email_confirmed_at: new Date().toISOString(),
-      phone: '',
-      confirmation_sent_at: new Date().toISOString(),
-      confirmed_at: new Date().toISOString(),
-      last_sign_in_at: new Date().toISOString(),
-      user_metadata: {
-        full_name: fullName,
-        role: role,
-      },
-      app_metadata: {
-        provider: 'email',
-        providers: ['email'],
-      },
-      identities: [],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
+    console.log(`✅ 로그인 성공: ${user.email} (${user.role})`);
 
-    console.log(`✅ Netlify Functions 로그인 성공: ${email} (${role})`);
-
+    // 7. 성공 응답
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         success: true,
-        user,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          emailVerified: user.email_verified,
+          createdAt: user.created_at,
+        },
+        access_token: accessToken,
         message: '로그인 성공',
       }),
     };
 
   } catch (error) {
-    console.error('Netlify Functions 로그인 오류:', error);
+    console.error('🚨 로그인 처리 오류:', error);
 
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: '서버 오류가 발생했습니다' }),
+      body: JSON.stringify({ 
+        error: '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      }),
     };
   }
 }; 
