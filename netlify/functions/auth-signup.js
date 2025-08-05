@@ -1,6 +1,7 @@
 // Netlify Functions - 회원가입 (실제 DB 연동)
 const { neon } = require('@neondatabase/serverless');
 const bcrypt = require('bcryptjs');
+const { Resend } = require('resend');
 
 exports.handler = async (event, context) => {
   // CORS 헤더 설정
@@ -31,6 +32,8 @@ exports.handler = async (event, context) => {
 
   // 데이터베이스 연결
   const sql = neon(process.env.DATABASE_URL);
+  // Resend 초기화
+  const resend = new Resend(process.env.RESEND_API_KEY);
 
   try {
     const { email, password, confirmPassword, name, phone, role, agreeToTerms } = JSON.parse(event.body);
@@ -137,19 +140,17 @@ exports.handler = async (event, context) => {
     const newUser = newUsers[0];
     console.log(`✅ 사용자 데이터베이스 저장 완료: ${newUser.id}`);
 
-    // 5. 이메일 발송 처리
+    // 5. 실제 이메일 발송 처리
     let emailSent = false;
+    let emailError = null;
+    
     try {
-      // TODO: 실제 이메일 발송 구현 (Resend)
-      // 현재는 로깅으로 대체
-      console.log(`📧 인증 이메일 발송:`);
-      console.log(`받는 사람: ${email} (${name})`);
-      console.log(`인증 링크: ${verificationLink}`);
-      console.log(`만료 시간: 24시간`);
+      console.log(`📧 실제 이메일 발송 시작: ${email}`);
 
-      // 이메일 내용
-      const emailContent = {
-        to: email,
+      // Resend API를 사용한 실제 이메일 발송
+      const emailResponse = await resend.emails.send({
+        from: 'noreply@vibecoding.academy',
+        to: [email],
         subject: '[바이브코딩 아카데미] 이메일 인증을 완료해주세요 ✨',
         html: `
           <div style="max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc;">
@@ -206,18 +207,22 @@ exports.handler = async (event, context) => {
             </div>
           </div>
         `
-      };
+      });
 
-      // TODO: Resend API 호출
-      // const resend = new Resend(process.env.RESEND_API_KEY);
-      // await resend.emails.send(emailContent);
+      emailSent = true;
+      console.log(`✅ 실제 이메일 발송 성공:`, emailResponse);
+      console.log(`📧 이메일 ID: ${emailResponse.data?.id}`);
 
-      emailSent = true; // Mock으로 성공 처리
-      console.log(`✅ 이메일 발송 완료 (Mock): ${email}`);
-
-    } catch (emailError) {
-      console.error(`❌ 이메일 발송 실패:`, emailError);
+    } catch (emailSendError) {
+      console.error(`❌ 실제 이메일 발송 실패:`, emailSendError);
+      emailError = emailSendError.message;
       emailSent = false;
+
+      // 이메일 발송 실패 시 fallback 처리
+      console.log(`📧 Fallback: 인증 링크 콘솔 출력`);
+      console.log(`받는 사람: ${email} (${name})`);
+      console.log(`인증 링크: ${verificationLink}`);
+      console.log(`만료 시간: 24시간`);
     }
 
     // 6. 성공 응답
@@ -234,7 +239,9 @@ exports.handler = async (event, context) => {
           emailVerified: newUser.email_verified,
           createdAt: newUser.created_at,
         },
-        message: '회원가입이 완료되었습니다! 이메일을 확인하여 계정을 활성화해주세요.',
+        message: emailSent 
+          ? '회원가입이 완료되었습니다! 이메일을 확인하여 계정을 활성화해주세요.'
+          : '회원가입이 완료되었습니다! 이메일 발송 중 문제가 발생했습니다. 잠시 후 다시 시도하거나 관리자에게 문의해주세요.',
         emailSent: emailSent,
         verificationRequired: true,
         // 개발/테스트용 정보
@@ -242,6 +249,8 @@ exports.handler = async (event, context) => {
           verificationLink: verificationLink,
           databaseSaved: true,
           userId: newUser.id,
+          emailError: emailError,
+          resendApiAvailable: !!process.env.RESEND_API_KEY,
         }
       }),
     };
